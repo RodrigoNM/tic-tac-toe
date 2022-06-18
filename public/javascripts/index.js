@@ -11,15 +11,28 @@ tiles.forEach(tile => {
   tile.addEventListener('click', function() {
     if (validTile(tile)) {
       draw(tile);
+      socket.emit('updateGame', [tile.id, tile.textContent]);
       changeDisplayPlayer();
       changeCurrentPlayer();
-      playRandomly();
+      // playRandomly();
     }
   });
 });
 
+socket.on('updateGame', (arr) => {
+  var tile = tiles[arr[0]];
+  tile.innerText = arr[1];
+  addClass(tile, arr[1]);
+  checkWinner(tile);
+});
+
+socket.on('clear', () => {
+  clearBoard();
+});
+
 document.getElementById('reset').addEventListener('click', function() {
   clearBoard();
+  socket.emit('clear');
 });
 
 function validTile(tile) {
@@ -37,7 +50,7 @@ function tileIsEmpty(tile) {
 function changeDisplayPlayer() {
   var oldPlayer = currentPlayer;
   
-  newPlayer = currentPlayer == 'X' ? 'O' : 'X';
+  var newPlayer = currentPlayer == 'X' ? 'O' : 'X';
 
   display.innerText = newPlayer;
   removeClass(display, oldPlayer);
@@ -62,11 +75,11 @@ function draw(tile) {
   checkWinner(tile);
 }
 
-function playRandomly() {
-  var notEmptyTiles = document.querySelectorAll("[class=tile]")
-  var tile = randomElement(notEmptyTiles);
-  setTimeout(function() { draw(tile); }, 100)
-}
+// function playRandomly() {
+//   var notEmptyTiles = document.querySelectorAll("[class=tile]")
+//   var tile = randomElement(notEmptyTiles);
+//   setTimeout(function() { draw(tile); }, 100)
+// }
 
 function randomElement(array) {
   return array[Math.floor(Math.random()*array.length)];
@@ -175,7 +188,6 @@ function checkWinner(tile) {
         }
       break;
     case 8:
-      winner = false
       if (
         checkHorizontally(6) ||
         checkVertically(2) ||

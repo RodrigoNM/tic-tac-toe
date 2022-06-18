@@ -21,4 +21,7 @@ block body-content
       section.display.announcer.hide
       section.controls
         button#reset Reset
-  script(src='/javascripts/index.js')
+  script(type='module', src='/javascripts/index.js')
+  script(src='/socket.io/socket.io.js')
+  script.
+    const socket = io();
