@@ -8,6 +8,9 @@ var app = require('../app');
 var debug = require('debug')('tic-tac-toe:server');
 var http = require('http');
 var socket = require('socket.io');
+var players = {}; // opponent: scoket.id of the opponent, symbol = "X" | "O", socket: player's socket
+var clients = {};
+var unmatched;
 
 /**
  * Get port from environment and store in Express.
@@ -32,16 +35,73 @@ server.on('error', onError);
 server.on('listening', onListening);
 
 io.on('connection', (socket) => {
-  console.log(`User ${socket.id} connected`);
-  
+  console.log(`> Player connected on server: ${socket.id}`);
+  clients[socket.id] = socket;
+
   socket.on('disconnect', () => {
-    console.log(`User ${socket.id} disconnected`);
+    console.log(`> Player disconnected from server: ${socket.id}`);
+    delete clients[socket.id];
+    socket.broadcast.emit('clientdisconnect', socket.id);
   });
 
-  socket.on('updateGame', (tile) => {
-    io.emit('updateGame', tile);
+  addPlayer(socket);
+
+  if(opponentOf(socket)) { // If the current player has an opponent the game can begin
+    socket.emit('gameBegin', { // Send the gameBegin event to the player
+      symbol: players[socket.id].symbol
+    });
+
+    opponentOf(socket).emit('gameBegin', { // Send the gameBegin event to the opponent
+      symbol: players[opponentOf(socket).id].symbol
+    });
+  }
+  
+  socket.on('makeMove', function(data) {
+    if (!opponentOf(socket)) {
+      return;
+    }
+
+    socket.emit('moveMade', data); // Emit for the player who made the move
+    opponentOf(socket).emit('moveMade', data); // Emit for the opponent
+  });
+
+  socket.on('clearBoard', function() {
+    socket.emit('boardCleared');
+    opponentOf(socket).emit('boardCleared');
+  });
+
+  socket.on('disconnect', function() {
+    if(opponentOf(socket)) {
+      opponentOf(socket).emit('opponentLeft');
+    }
   });
 });
+
+function addPlayer(socket) {
+  players[socket.id] = {
+    opponent: unmatched,
+    symbol: 'X',
+    socket: socket
+  }
+
+  // If 'unmatched' is defined it contains the socket.id of the player who was waiting for an opponent
+  // then, the current socket is player #2
+  if(unmatched) {
+    players[socket.id].symbol = 'O';
+    players[unmatched].opponent = socket.id;
+    unmatched = null;
+  } else { // If unmatched is  not defined it means the player (current socket) is waiting for an opponet (player #1)
+    unmatched = socket.id
+  }
+}
+
+function opponentOf(socket) {
+  if (!players[socket.id].opponent) {
+    return;
+  }
+
+  return players[players[socket.id].opponent].socket;
+}
 
 /**
  * Normalize a port into a number, string, or false.

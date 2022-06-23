@@ -3,10 +3,7 @@
   <head>
     <title>Tic-Tac-Toe</title>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="stylesheet" href="/stylesheets/style.css">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Itim&display=swap">
     <script src="/javascripts/index.js"></script>
     <script src="/socket.io/socket.io.js"></script>
   </head>
@@ -15,7 +12,7 @@
       <section class="title">
         <h1>Tic Tac Toe</h1>
       </section>
-      <section class="display">Player <span id="display-player"></span>&apos;s turn</section>
+      <section class="display" id="displayMessage"></section>
       <section class="container">
         <div class="tile" id="0"></div>
         <div class="tile" id="1"></div>
@@ -27,11 +24,16 @@
         <div class="tile" id="7"></div>
         <div class="tile" id="8"></div>
       </section>
-      <section class="display announcer hide"></section>
       <section class="controls">
-        <button id="reset">Reset</button>
+        <button id="newGame">New Game</button>
       </section>
     </main>
-    <script>const socket = io();</script>
+    <script>
+      const socket = io();
+
+      socket.on('connect', () => {
+        console.log(`> Player connected on client: ${socket.id}`);
+      });
+    </script>
   </body>
 </html>
